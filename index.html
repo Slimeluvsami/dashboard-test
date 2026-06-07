@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  header { padding: 20px 30px; border-bottom: 1px solid #1e2130; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+  .last-update { font-size: 12px; color: #555; }
+  nav { display: flex; gap: 8px; padding: 16px 30px; border-bottom: 1px solid #1e2130; flex-wrap: wrap; }
+  nav button { padding: 8px 18px; border-radius: 20px; border: 1px solid #2a2d3e; background: transparent; color: #888; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  nav button:hover { border-color: #4a9eff; color: #4a9eff; }
+  nav button.active { background: #4a9eff; border-color: #4a9eff; color: #fff; font-weight: 500; }
+  .container { padding: 24px 30px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-header { margin-bottom: 20px; }
+  .section-header h2 { font-size: 18px; font-weight: 500; color: #fff; margin-bottom: 4px; }
+  .section-header p { font-size: 13px; color: #555; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: #161922; border: 1px solid #1e2130; border-radius: 10px; padding: 16px; }
+  .card .label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .card .value { font-size: 22px; font-weight: 600; color: #fff; }
+  .card .change { font-size: 12px; margin-top: 4px; }
+  .up { color: #26de81; }
+  .down { color: #ff4d4d; }
+  .news-grid { display: grid; gap: 10px; }
+  .news-item { background: #161922; border: 1px solid #1e2130; border-radius: 10px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; cursor: pointer; transition: border-color 0.2s; }
+  .news-item:hover { border-color: #2a3050; }
+  .news-source { font-size: 10px; color: #4a9eff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .news-title { font-size: 13px; color: #ccc; line-height: 1.5; }
+  .news-time { font-size: 11px; color: #444; margin-top: 5px; }
+  .news-icon { font-size: 22px; min-width: 32px; text-align: center; margin-top: 2px; }
+  .toggle-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toggle-btn { padding: 5px 12px; border-radius: 14px; border: 1px solid #2a2d3e; background: transparent; color: #666; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .toggle-btn.on { background: #1e2a3e; border-color: #4a9eff; color: #4a9eff; }
+  .extras { background: #161922; border: 1px solid #1e2130; border-radius: 10px; padding: 16px; margin-bottom: 16px; display: none; }
+  .extras.visible { display: block; }
+  .extras h4 { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .extras-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+  .extra-item { background: #0f1117; border-radius: 8px; padding: 10px 12px; }
+  .extra-item .el { font-size: 11px; color: #555; margin-bottom: 3px; }
+  .extra-item .ev { font-size: 14px; font-weight: 500; color: #ccc; }
+  .loading { text-align: center; padding: 40px; color: #444; font-size: 14px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #26de81; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .refresh-btn { padding: 7px 14px; background: transparent; border: 1px solid #2a2d3e; border-radius: 8px; color: #666; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .refresh-btn:hover { border-color: #4a9eff; color: #4a9eff; }
+  .influence-box { background: #161922; border-left: 3px solid #4a9eff; border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; font-size: 13px; color: #aaa; line-height: 1.6; }
+  .influence-box strong { color: #4a9eff; display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 4px; margin-bottom: 4px; }
+  .tag-blue { background: #1a2a3e; color: #4a9eff; }
+  .tag-green { background: #1a2e1a; color: #26de81; }
+  .tag-red { background: #2e1a1a; color: #ff6b6b; }
+  .tag-yellow { background: #2e2a1a; color: #ffd93d; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span>Trading Dashboard</h1>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="last-update" id="lastUpdate">Chargement...</span>
+    <button class="refresh-btn" onclick="refreshAll()">↻ Actualiser</button>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('actions')">📈 Actions</button>
+  <button onclick="showSection('crypto')">₿ Crypto</button>
+  <button onclick="showSection('forex')">💱 Forex</button>
+  <button onclick="showSection('matieres')">🪙 Matières premières</button>
+</nav>
+
+<div class="container">
+
+  <!-- ACTIONS -->
+  <div id="section-actions" class="section active">
+    <div class="section-header">
+      <h2>Marché des actions</h2>
+      <p>Influencé par : résultats d'entreprises, taux d'intérêt, politique économique, emploi</p>
+    </div>
+    <div class="toggle-bar">
+      <button class="toggle-btn" id="tog-actions-prix" onclick="toggleExtra('actions-prix')">+ Prix clés</button>
+      <button class="toggle-btn" id="tog-actions-infos" onclick="toggleExtra('actions-infos')">+ Facteurs d'influence</button>
+    </div>
+    <div class="extras" id="extra-actions-prix">
+      <h4>Indices majeurs</h4>
+      <div class="extras-grid" id="indices-grid"><div class="loading">Chargement...</div></div>
+    </div>
+    <div class="extras" id="extra-actions-infos">
+      <h4>Ce qui fait bouger ce marché</h4>
+      <div>
+        <div class="influence-box"><strong>Taux d'intérêt (FED / BCE)</strong>Quand les taux montent → les actions baissent souvent. L'argent va vers les obligations, plus sûres.</div>
+        <div class="influence-box"><strong>Résultats trimestriels</strong>Chaque trimestre, les grandes entreprises publient leurs résultats. Bons résultats = hausse, mauvais = chute.</div>
+        <div class="influence-box"><strong>Indicateurs économiques</strong>Chômage, inflation, PIB — ces chiffres influencent directement la confiance des investisseurs.</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;"><h2 style="font-size:14px;color:#555;">Actualités actions</h2></div>
+    <div class="news-grid" id="news-actions"><div class="loading">Chargement des actualités...</div></div>
+  </div>
+
+  <!-- CRYPTO -->
+  <div id="section-crypto" class="section">
+    <div class="section-header">
+      <h2>Marché crypto</h2>
+      <p>Influencé par : réglementation, sentiment du marché, technologie, adoption institutionnelle</p>
+    </div>
+    <div class="toggle-bar">
+      <button class="toggle-btn" id="tog-crypto-prix" onclick="toggleExtra('crypto-prix')">+ Prix en direct</button>
+      <button class="toggle-btn" id="tog-crypto-infos" onclick="toggleExtra('crypto-infos')">+ Facteurs d'influence</button>
+    </div>
+    <div class="extras" id="extra-crypto-prix">
+      <h4>Top cryptos</h4>
+      <div class="extras-grid" id="crypto-grid"><div class="loading">Chargement...</div></div>
+    </div>
+    <div class="extras" id="extra-crypto-infos">
+      <h4>Ce qui fait bouger ce marché</h4>
+      <div>
+        <div class="influence-box"><strong>Réglementation gouvernementale</strong>Un pays qui interdit ou régule les cryptos → chute soudaine. Un pays qui les adopte → hausse.</div>
+        <div class="influence-box"><strong>Adoption institutionnelle</strong>Quand de grandes entreprises (Tesla, BlackRock...) achètent du Bitcoin → signal très haussier.</div>
+        <div class="influence-box"><strong>Sentiment et réseaux sociaux</strong>Le marché crypto est très émotionnel. Un tweet de Elon Musk peut faire bouger le marché de 10%.</div>
+        <div class="influence-box"><strong>Halving Bitcoin</strong>Tous les ~4 ans, la récompense des mineurs est divisée par 2. Historiquement suivi d'une forte hausse.</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;"><h2 style="font-size:14px;color:#555;">Actualités crypto</h2></div>
+    <div class="news-grid" id="news-crypto"><div class="loading">Chargement des actualités...</div></div>
+  </div>
+
+  <!-- FOREX -->
+  <div id="section-forex" class="section">
+    <div class="section-header">
+      <h2>Marché Forex</h2>
+      <p>Influencé par : taux d'intérêt, inflation, stabilité politique, balance commerciale</p>
+    </div>
+    <div class="toggle-bar">
+      <button class="toggle-btn" id="tog-forex-prix" onclick="toggleExtra('forex-prix')">+ Taux de change</button>
+      <button class="toggle-btn" id="tog-forex-infos" onclick="toggleExtra('forex-infos')">+ Facteurs d'influence</button>
+    </div>
+    <div class="extras" id="extra-forex-prix">
+      <h4>Paires majeures</h4>
+      <div class="extras-grid" id="forex-grid"><div class="loading">Chargement...</div></div>
+    </div>
+    <div class="extras" id="extra-forex-infos">
+      <h4>Ce qui fait bouger ce marché</h4>
+      <div>
+        <div class="influence-box"><strong>Décisions des banques centrales</strong>FED (USD), BCE (EUR), BOJ (JPY)... Quand une banque monte ses taux → sa devise se renforce.</div>
+        <div class="influence-box"><strong>Inflation</strong>Une forte inflation affaiblit une devise. Les traders surveillent les données CPI de près.</div>
+        <div class="influence-box"><strong>Stabilité politique</strong>Élections, crises gouvernementales, guerres — tout cela crée de la volatilité sur les devises concernées.</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;"><h2 style="font-size:14px;color:#555;">Actualités forex & macro</h2></div>
+    <div class="news-grid" id="news-forex"><div class="loading">Chargement des actualités...</div></div>
+  </div>
+
+  <!-- MATIÈRES PREMIÈRES -->
+  <div id="section-matieres" class="section">
+    <div class="section-header">
+      <h2>Matières premières</h2>
+      <p>Influencé par : géopolitique, offre/demande mondiale, météo, dollar américain</p>
+    </div>
+    <div class="toggle-bar">
+      <button class="toggle-btn" id="tog-matieres-prix" onclick="toggleExtra('matieres-prix')">+ Prix actuels</button>
+      <button class="toggle-btn" id="tog-matieres-infos" onclick="toggleExtra('matieres-infos')">+ Facteurs d'influence</button>
+    </div>
+    <div class="extras" id="extra-matieres-prix">
+      <h4>Matières premières clés</h4>
+      <div class="extras-grid" id="matieres-grid"><div class="loading">Chargement...</div></div>
+    </div>
+    <div class="extras" id="extra-matieres-infos">
+      <h4>Ce qui fait bouger ce marché</h4>
+      <div>
+        <div class="influence-box"><strong>Géopolitique</strong>Un conflit au Moyen-Orient → le pétrole monte. Une guerre impliquant des pays producteurs de blé → prix alimentaires en hausse.</div>
+        <div class="influence-box"><strong>Dollar américain (USD)</strong>Les matières premières sont cotées en dollars. Si le dollar monte → les matières premières baissent souvent (et inversement).</div>
+        <div class="influence-box"><strong>Météo et saisons</strong>Sécheresse, inondations, gel → impacte directement les récoltes (blé, café, maïs...).</div>
+        <div class="influence-box"><strong>Décisions OPEP</strong>L'OPEP+ contrôle la production de pétrole mondiale. Réduire la production → prix monte. Augmenter → prix baisse.</div>
+      </div>
+    </div>
+    <div class="section-header" style="margin-top:8px;"><h2 style="font-size:14px;color:#555;">Actualités matières premières</h2></div>
+    <div class="news-grid" id="news-matieres"><div class="loading">Chargement des actualités...</div></div>
+  </div>
+
+</div>
+
+<script>
+const NEWS_API_KEY = '296b926043684738abf81d3cc485c4cc';
+const AV_KEY = 'SP1Q47LCZANXF0OD';
+
+const marketIcons = { actions: '📈', crypto: '₿', forex: '💱', matieres: '🪙' };
+
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleExtra(id) {
+  const box = document.getElementById('extra-' + id);
+  const btn = document.getElementById('tog-' + id);
+  const isVisible = box.classList.contains('visible');
+  box.classList.toggle('visible', !isVisible);
+  btn.classList.toggle('on', !isVisible);
+  if (!isVisible) loadExtraData(id);
+}
+
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
+  if (diff < 1) return "à l'instant";
+  if (diff < 60) return diff + ' min';
+  if (diff < 1440) return Math.floor(diff/60) + 'h';
+  return Math.floor(diff/1440) + 'j';
+}
+
+async function fetchNews(query, targetId) {
+  try {
+    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=fr&max=6&apikey=GNEWS_PLACEHOLDER`;
+    const res = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&sortBy=publishedAt&pageSize=6&apiKey=${NEWS_API_KEY}`);
+    const data = await res.json();
+    const el = document.getElementById(targetId);
+    if (!data.articles || data.articles.length === 0) {
+      el.innerHTML = '<div class="loading">Aucune actualité trouvée.</div>';
+      return;
+    }
+    el.innerHTML = data.articles.map(a => `
+      <div class="news-item" onclick="window.open('${a.url}','_blank')">
+        <div class="news-icon">${marketIcons[targetId.replace('news-','')]}</div>
+        <div style="flex:1">
+          <div class="news-source">${a.source.name}</div>
+          <div class="news-title">${a.title}</div>
+          <div class="news-time">${timeAgo(a.publishedAt)}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById(targetId).innerHTML = '<div class="loading">Erreur de chargement. Vérifie ta connexion.</div>';
+  }
+}
+
+async function loadCryptoPrices() {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=bitcoin,ethereum,solana,binancecoin,ripple&order=market_cap_desc');
+    const data = await res.json();
+    document.getElementById('crypto-grid').innerHTML = data.map(c => `
+      <div class="extra-item">
+        <div class="el">${c.name}</div>
+        <div class="ev">€${c.current_price.toLocaleString('fr-BE')}</div>
+        <div class="change ${c.price_change_percentage_24h >= 0 ? 'up' : 'down'}">
+          ${c.price_change_percentage_24h >= 0 ? '▲' : '▼'} ${Math.abs(c.price_change_percentage_24h).toFixed(2)}% (24h)
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    document.getElementById('crypto-grid').innerHTML = '<div class="loading">Erreur chargement crypto.</div>';
+  }
+}
+
+async function loadForexPrices() {
+  const pairs = [
+    {from:'EUR',to:'USD'}, {from:'EUR',to:'GBP'}, {from:'EUR',to:'JPY'},
+    {from:'GBP',to:'USD'}, {from:'USD',to:'CHF'}
+  ];
+  const grid = document.getElementById('forex-grid');
+  grid.innerHTML = '<div class="loading">Chargement...</div>';
+  try {
+    const results = await Promise.all(pairs.map(p =>
+      fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${p.from}&to_currency=${p.to}&apikey=${AV_KEY}`)
+        .then(r => r.json())
+    ));
+    grid.innerHTML = results.map((r, i) => {
+      const rate = r['Realtime Currency Exchange Rate'];
+      if (!rate) return `<div class="extra-item"><div class="el">${pairs[i].from}/${pairs[i].to}</div><div class="ev">N/A</div></div>`;
+      return `<div class="extra-item">
+        <div class="el">${rate['1. From_Currency Code']}/${rate['3. To_Currency Code']}</div>
+        <div class="ev">${parseFloat(rate['5. Exchange Rate']).toFixed(4)}</div>
+        <div class="change" style="color:#555;font-size:11px;">Mis à jour: ${rate['6. Last Refreshed'].split(' ')[1]}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="loading">Erreur chargement forex.</div>';
+  }
+}
+
+async function loadIndices() {
+  const symbols = [
+    {s:'SPY',n:'S&P 500 (ETF)'}, {s:'QQQ',n:'Nasdaq (ETF)'}, {s:'EWQ',n:'CAC 40 (ETF)'}
+  ];
+  const grid = document.getElementById('indices-grid');
+  try {
+    const results = await Promise.all(symbols.map(s =>
+      fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${s.s}&apikey=${AV_KEY}`)
+        .then(r => r.json())
+    ));
+    grid.innerHTML = results.map((r, i) => {
+      const q = r['Global Quote'];
+      if (!q || !q['05. price']) return `<div class="extra-item"><div class="el">${symbols[i].n}</div><div class="ev">N/A</div></div>`;
+      const change = parseFloat(q['10. change percent']);
+      return `<div class="extra-item">
+        <div class="el">${symbols[i].n}</div>
+        <div class="ev">$${parseFloat(q['05. price']).toFixed(2)}</div>
+        <div class="change ${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="loading">Erreur chargement indices.</div>';
+  }
+}
+
+function loadMatieresPrices() {
+  document.getElementById('matieres-grid').innerHTML = `
+    <div class="extra-item"><div class="el">Or (XAU/USD)</div><div class="ev">voir Yahoo Finance</div><div class="change" style="color:#555;font-size:11px;">Limite API gratuite</div></div>
+    <div class="extra-item"><div class="el">Pétrole (WTI)</div><div class="ev">voir TradingView</div><div class="change" style="color:#555;font-size:11px;">Limite API gratuite</div></div>
+    <div class="extra-item"><div class="el">Gaz naturel</div><div class="ev">voir TradingView</div><div class="change" style="color:#555;font-size:11px;">Limite API gratuite</div></div>
+  `;
+}
+
+function loadExtraData(id) {
+  if (id === 'crypto-prix') loadCryptoPrices();
+  else if (id === 'forex-prix') loadForexPrices();
+  else if (id === 'actions-prix') loadIndices();
+  else if (id === 'matieres-prix') loadMatieresPrices();
+}
+
+function refreshAll() {
+  const active = document.querySelector('.section.active').id.replace('section-','');
+const queries = {
+    actions: 'stock market equities earnings',
+    crypto: 'bitcoin ethereum cryptocurrency',
+    forex: 'forex dollar euro central bank',
+    matieres: 'oil gold commodities OPEC'
+  };
+  fetchNews(queries[active], 'news-' + active);
+  document.getElementById('lastUpdate').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-BE');
+}
+
+function init() {
+  fetchNews('stock market equities earnings', 'news-actions');
+  fetchNews('bitcoin ethereum cryptocurrency', 'news-crypto');
+  fetchNews('forex dollar euro central bank', 'news-forex');
+  fetchNews('oil gold commodities OPEC', 'news-matieres');
+  document.getElementById('lastUpdate').textContent = 'Actualisé à ' + new Date().toLocaleTimeString('fr-BE');
+  setInterval(refreshAll, 5 * 60 * 1000);
+}
+
+init();
+</script>
+</body>
+</html>
