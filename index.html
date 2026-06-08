@@ -186,7 +186,7 @@
 </div>
 
 <script>
-const NEWS_API_KEY = '296b926043684738abf81d3cc485c4cc';
+const GNEWS_KEY = '38b733225a8a71ebf3277ddf2cadd01c';
 const AV_KEY = 'SP1Q47LCZANXF0OD';
 
 const marketIcons = { actions: '📈', crypto: '₿', forex: '💱', matieres: '🪙' };
@@ -216,11 +216,10 @@ function timeAgo(dateStr) {
 }
 
 async function fetchNews(query, targetId) {
+  const el = document.getElementById(targetId);
   try {
-    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=fr&max=6&apikey=GNEWS_PLACEHOLDER`;
-    const res = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&sortBy=publishedAt&pageSize=6&apiKey=${NEWS_API_KEY}`);
+    const res = await fetch(`https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=en&max=8&sortby=publishedAt&apikey=${GNEWS_KEY}`);
     const data = await res.json();
-    const el = document.getElementById(targetId);
     if (!data.articles || data.articles.length === 0) {
       el.innerHTML = '<div class="loading">Aucune actualité trouvée.</div>';
       return;
@@ -235,7 +234,7 @@ async function fetchNews(query, targetId) {
         </div>
       </div>`).join('');
   } catch(e) {
-    document.getElementById(targetId).innerHTML = '<div class="loading">Erreur de chargement. Vérifie ta connexion.</div>';
+    el.innerHTML = '<div class="loading">Erreur de chargement. Vérifie ta connexion.</div>';
   }
 }
 
@@ -324,7 +323,7 @@ function loadExtraData(id) {
 
 function refreshAll() {
   const active = document.querySelector('.section.active').id.replace('section-','');
-const queries = {
+  const queries = {
     actions: 'stock market equities earnings',
     crypto: 'bitcoin ethereum cryptocurrency',
     forex: 'forex dollar euro central bank',
